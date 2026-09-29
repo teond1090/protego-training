@@ -197,7 +197,7 @@ add('18-recap', "<div class='kick'>You&rsquo;re ready</div><h1>Protego in one br
   + "</div>")
 
 add('19-contact', """<div class='kick'>Questions?</div><h1>Don&rsquo;t guess &mdash; ask</h1>
-<div class='contact'><b>Teon Delacruz</b><span>Client Success Manager &middot; Direct 623-215-0691</span></div>
+<div class='contact'><b>Teon Delacruz</b><span>Client Success Manager &middot; Direct 623-215-0691</span><span>tdelacruz@tenantpropertyprotection.com</span></div>
 <div class='rows' style='margin-top:40px'>"""
   + row("i", "ProtegoTermsConditions.com", "The full plan terms, always available.")
   + "</div>")
