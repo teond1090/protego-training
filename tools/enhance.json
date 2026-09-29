@@ -1,0 +1,126 @@
+{
+ "slide_dir": "slides",
+ "course": "Protego Manager Training",
+ "accent": "#2891CD",
+ "navy": "#10254C",
+ "segments": [
+  {
+   "name": "part-1",
+   "video": "media/part-1.webm",
+   "title": "Welcome + Why Protego Exists",
+   "slides": [
+    {
+     "at": 0.0,
+     "img": "01-title.png"
+    },
+    {
+     "at": 0.272,
+     "img": "02-gap.png"
+    },
+    {
+     "at": 0.696,
+     "img": "03-not-insurance.png"
+    }
+   ]
+  },
+  {
+   "name": "part-2",
+   "video": "media/part-2.webm",
+   "title": "Plans & Presenting",
+   "slides": [
+    {
+     "at": 0.0,
+     "img": "04-rates.png"
+    },
+    {
+     "at": 0.429,
+     "img": "05-present.png"
+    }
+   ]
+  },
+  {
+   "name": "part-3",
+   "video": "media/part-3.webm",
+   "title": "The Addendum",
+   "slides": [
+    {
+     "at": 0.0,
+     "img": "06-addendum.png"
+    },
+    {
+     "at": 0.507,
+     "img": "07-decline.png"
+    }
+   ]
+  },
+  {
+   "name": "part-4",
+   "video": "media/part-4.webm",
+   "title": "Coverage & Exclusions",
+   "slides": [
+    {
+     "at": 0.0,
+     "img": "08-covered.png"
+    },
+    {
+     "at": 0.134,
+     "img": "09-burglary.png"
+    },
+    {
+     "at": 0.516,
+     "img": "10-limits.png"
+    },
+    {
+     "at": 0.708,
+     "img": "11-not-covered.png"
+    }
+   ]
+  },
+  {
+   "name": "part-5",
+   "video": "media/part-5.webm",
+   "title": "Filing a Claim",
+   "slides": [
+    {
+     "at": 0.0,
+     "img": "12-claim.png"
+    },
+    {
+     "at": 0.45,
+     "img": "13-claim-process.png"
+    },
+    {
+     "at": 0.792,
+     "img": "14-payout.png"
+    }
+   ]
+  },
+  {
+   "name": "part-6",
+   "video": "media/part-6.webm",
+   "title": "The Tenant Opt-Out Process",
+   "slides": [
+    {
+     "at": 0.0,
+     "img": "15-optout.png"
+    },
+    {
+     "at": 0.128,
+     "img": "16-five.png"
+    },
+    {
+     "at": 0.281,
+     "img": "17-after.png"
+    },
+    {
+     "at": 0.645,
+     "img": "18-recap.png"
+    },
+    {
+     "at": 0.853,
+     "img": "19-contact.png"
+    }
+   ]
+  }
+ ]
+}

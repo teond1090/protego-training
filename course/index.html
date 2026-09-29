@@ -1,0 +1,745 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Protego Manager Training</title>
+<style>
+  :root{
+    --red:#2891CD; --red-dark:#1F6FA3; --ink:#1c1c1e; --muted:#5f6368;
+    --line:#e4e4e7; --bg:#f4f5f7; --card:#ffffff; --good:#1a7f43; --bad:#c0392b;
+    --shadow:0 6px 24px rgba(0,0,0,.10);
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{font-family:"Segoe UI",Calibri,Arial,sans-serif;color:var(--ink);background:var(--bg);line-height:1.5}
+  .wrap{max-width:1040px;margin:0 auto;padding:20px}
+  header.brand{display:flex;align-items:center;gap:20px;background:var(--card);
+    border-radius:14px;padding:18px 24px;box-shadow:var(--shadow);margin-bottom:18px;flex-wrap:wrap}
+  header.brand img{height:52px;width:auto}
+  header.brand .titles{border-left:2px solid var(--line);padding-left:20px}
+  header.brand h1{margin:0;font-size:1.15rem;color:var(--red);letter-spacing:.2px}
+  header.brand p{margin:2px 0 0;font-size:.85rem;color:var(--muted)}
+
+  .rail{display:flex;align-items:center;gap:10px;margin:0 4px 14px;font-size:.8rem;color:var(--muted)}
+  .rail .steps{display:flex;gap:6px;flex:1}
+  .rail .seg{height:8px;border-radius:6px;background:#dcdde1;flex:1;transition:background .3s}
+  .rail .seg.done{background:var(--red)}
+
+  /* ---------- player ---------- */
+  .player{position:relative;background:#000;border-radius:14px;overflow:hidden;box-shadow:var(--shadow)}
+  .player video{display:block;width:100%;height:auto;background:#000}
+  /* Slide stage. The avatar renders centred and HeyGen gives no way to move it,
+     so the slide is painted underneath and the presenter is docked over the right
+     edge here instead — the same layout as the original recorded courses. */
+  .player.staged{aspect-ratio:16/9;background:#fff}
+  .player.staged #slideImg{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;
+    background:#fff;z-index:1;transition:opacity .25s}
+  /* The render is opaque black behind her (HeyGen delivers yuv420p even when
+     asked for an alpha webm) and her blazer is black too, so keying is out.
+     She is framed as a deliberate studio card instead, square so the
+     high-energy delivery's wide gestures stay in frame. 31.25% of 1920 is
+     the same 600px card the compositor in tools/ uses. */
+  .player.staged #vid{position:absolute;right:20px;bottom:20px;width:31.25%;aspect-ratio:1/1;
+    height:auto;z-index:2;object-fit:cover;object-position:center;background:#000;
+    border-radius:16px;box-shadow:0 12px 38px rgba(12,18,32,.5);
+    border:2px solid rgba(255,255,255,.12)}
+  .player.staged.pip #vid{width:26%;right:14px;bottom:14px;border-radius:12px;
+    box-shadow:0 8px 28px rgba(0,0,0,.35)}
+  .player:fullscreen{border-radius:0;display:flex;flex-direction:column;justify-content:center}
+  .player:fullscreen video{max-height:100vh;width:100%;object-fit:contain}
+
+  .bigplay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;cursor:pointer;
+    background:rgba(0,0,0,.30);transition:opacity .2s;z-index:5}
+  .bigplay.hidden{opacity:0;pointer-events:none}
+  .bigplay .btn{width:82px;height:82px;border-radius:50%;background:rgba(176,24,36,.92);
+    display:flex;align-items:center;justify-content:center;box-shadow:0 4px 20px rgba(0,0,0,.4)}
+  .bigplay .btn::after{content:"";border-style:solid;border-width:18px 0 18px 30px;
+    border-color:transparent transparent transparent #fff;margin-left:6px}
+
+  .controls{display:flex;align-items:center;gap:10px;padding:10px 14px;background:#141416;color:#fff;
+    position:relative;z-index:10}
+  .player:fullscreen .controls{position:absolute;left:0;right:0;bottom:0;background:rgba(15,15,17,.92)}
+  .controls button{background:none;border:0;color:#fff;cursor:pointer;padding:4px;display:flex;
+    align-items:center;border-radius:6px}
+  .controls button:hover{background:rgba(255,255,255,.12)}
+  .ctrl-icon{width:20px;height:20px;fill:#fff}
+  .skip{font-size:.7rem;font-weight:700;letter-spacing:.2px;gap:3px}
+
+  .track{position:relative;flex:1;height:20px;display:flex;align-items:center;cursor:pointer}
+  .track .bar{position:absolute;left:0;right:0;height:8px;background:#3a3b3f;border-radius:6px}
+  .track .locked{position:absolute;top:0;bottom:0;height:8px;margin:auto 0;background:repeating-linear-gradient(
+      45deg,#4a4b50,#4a4b50 4px,#3a3b3f 4px,#3a3b3f 8px);border-radius:0 6px 6px 0}
+  .track .fill{position:absolute;left:0;height:8px;width:0;background:var(--red);border-radius:6px}
+  .track .knob{position:absolute;width:14px;height:14px;border-radius:50%;background:#fff;
+    box-shadow:0 1px 4px rgba(0,0,0,.5);transform:translateX(-7px);left:0}
+  .track .mark{position:absolute;top:2px;width:3px;height:16px;background:#f1c40f;border-radius:2px;transform:translateX(-1px)}
+  .time{font-variant-numeric:tabular-nums;font-size:.82rem;color:#cfd0d3;min-width:96px;text-align:right}
+  .hint{font-size:.8rem;color:var(--muted);margin:10px 4px 0;text-align:center}
+
+  .toast{position:absolute;left:50%;bottom:64px;transform:translateX(-50%);background:rgba(20,20,22,.94);
+    color:#fff;padding:10px 18px;border-radius:8px;font-size:.85rem;opacity:0;pointer-events:none;
+    transition:opacity .25s;z-index:20;white-space:nowrap}
+  .toast.show{opacity:1}
+
+  /* ---------- quiz overlay ----------
+     Lives INSIDE #player so it still shows when the player is fullscreen,
+     but uses position:fixed so it is NOT clipped by the player's box in
+     normal (windowed) mode — fixed descendants escape ancestor overflow. */
+  .overlay{position:fixed;inset:0;background:rgba(15,15,20,.86);display:flex;align-items:center;visibility:hidden;opacity:0;transition:opacity .45s ease,visibility 0s linear .45s;
+    justify-content:center;padding:16px;z-index:2147483000;overflow-y:auto}
+  .overlay.show{visibility:visible;opacity:1;transition:opacity .45s ease,visibility 0s}
+  .quiz{background:var(--card);border-radius:16px;max-width:720px;width:100%;
+    max-height:calc(100vh - 32px);overflow-y:auto;
+    box-shadow:0 20px 60px rgba(0,0,0,.5);margin:auto}
+  .quiz .qhead{background:var(--red);color:#fff;padding:16px 24px;border-radius:16px 16px 0 0;
+    position:sticky;top:0;z-index:2}
+  .quiz .qhead .kicker{font-size:.72rem;text-transform:uppercase;letter-spacing:1.5px;opacity:.9}
+  .quiz .qhead h2{margin:3px 0 0;font-size:1.2rem}
+  .quiz .qbody{padding:16px 24px 6px}
+  .qitem{padding:12px 0;border-bottom:1px solid var(--line)}
+  .qitem:last-child{border-bottom:0}
+  .qitem .q{font-weight:600;margin:0 0 8px;font-size:.98rem}
+  .qitem .qnum{color:var(--red);font-weight:700;margin-right:6px}
+  .opt{display:flex;align-items:flex-start;gap:10px;border:1.5px solid var(--line);border-radius:10px;
+    padding:9px 13px;margin:7px 0;cursor:pointer;transition:border-color .15s,background .15s;font-size:.94rem}
+  .opt:hover{border-color:#c9cacf}
+  .opt input{margin-top:3px;accent-color:var(--red)}
+  .opt.correct{border-color:var(--good);background:#eafaf0}
+  .opt.wrong{border-color:var(--bad);background:#fdecea}
+  .opt.locked{cursor:default;opacity:.95}
+  .explain{font-size:.85rem;background:#f6f7f9;border-left:3px solid var(--good);
+    padding:8px 11px;border-radius:0 8px 8px 0;margin:6px 0 2px;display:none}
+  .explain.show{display:block}
+  .explain.err{border-left-color:var(--bad)}
+  .qfoot{padding:14px 24px 20px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;
+    position:sticky;bottom:0;background:var(--card);border-radius:0 0 16px 16px}
+  .msg{font-size:.86rem;font-weight:600}
+  .msg.err{color:var(--bad)} .msg.ok{color:var(--good)}
+  .btn-primary{background:var(--red);color:#fff;border:0;border-radius:10px;padding:11px 24px;
+    font-size:.95rem;font-weight:600;cursor:pointer}
+  .btn-primary:hover{background:var(--red-dark)}
+
+  /* ---------- completion + certificate ---------- */
+  /* opt-out module (customer links only) */
+  .oo-step{border-top:1px solid var(--line);padding:18px 0 4px}
+  .oo-step:first-of-type{border-top:0;padding-top:4px}
+  .oo-kick{font-size:.72rem;font-weight:800;letter-spacing:.13em;text-transform:uppercase;color:var(--red)}
+  .oo-step h3{margin:4px 0 6px;font-size:1.08rem}
+  .oo-step p{margin:0 0 10px;font-size:.94rem;color:var(--muted);line-height:1.6}
+  .oo-list{margin:0;padding-left:20px;font-size:.94rem;line-height:1.75}
+  .oo-list b{color:var(--ink)}
+  .oo-flag{background:#fff5d6;border-left:3px solid #e0b23c;border-radius:6px;
+    padding:11px 13px;font-size:.9rem;margin:10px 0 0}
+  .oo-s{display:flex;gap:12px;align-items:flex-start;margin:0 0 12px;font-size:.94rem;
+    color:var(--muted);line-height:1.6}
+  .oo-s b{color:var(--ink)}
+  .oo-n{flex:none;width:26px;height:26px;border-radius:50%;background:#16233F;color:#fff;
+    display:grid;place-items:center;font-weight:700;font-size:.82rem;margin-top:2px}
+  .oo-check{margin-top:26px;border-top:2px solid var(--line);padding-top:20px}
+  .oo-locked{font-size:.86rem;color:var(--muted);margin-top:14px}
+  .panel{background:var(--card);border-radius:16px;box-shadow:var(--shadow);padding:30px;margin-top:20px;display:none}
+  .panel.show{display:block}
+  .panel h2{color:var(--red);margin:0 0 6px}
+  .scoreline{font-size:1.05rem;margin:10px 0 20px}
+  .scoreline b{color:var(--red)}
+  .field{margin:14px 0}
+  .field label{display:block;font-size:.85rem;color:var(--muted);margin-bottom:5px;font-weight:600}
+  .field input{width:100%;padding:12px 14px;border:1.5px solid var(--line);border-radius:10px;font-size:1rem}
+  .field input:focus{outline:none;border-color:var(--red)}
+
+  .cert-wrap{margin-top:22px;display:none}
+  .cert-wrap.show{display:block}
+  .certificate{background:#fff;border:2px solid var(--red);border-radius:8px;padding:46px 54px;
+    position:relative;box-shadow:var(--shadow);text-align:center}
+  .certificate::before{content:"";position:absolute;inset:12px;border:1px solid #e6c7ca;border-radius:4px;pointer-events:none}
+  .certificate .clogo{height:56px;margin:0 auto 14px;display:block}
+  .certificate .ckicker{text-transform:uppercase;letter-spacing:3px;font-size:.8rem;color:var(--muted)}
+  .certificate h3{font-size:1.7rem;margin:6px 0 2px;color:var(--red)}
+  .certificate .sub{color:var(--muted);font-size:.92rem;margin-bottom:22px}
+  .certificate .awarded{font-size:.9rem;color:var(--muted);margin-bottom:4px}
+  .certificate .name{font-size:2.1rem;font-family:"Georgia","Cambria",serif;margin:2px 0 6px;
+    border-bottom:2px solid var(--line);display:inline-block;padding:0 30px 8px}
+  .certificate .course{font-size:1.05rem;margin:16px 0 4px}
+  .certificate .course b{color:var(--red)}
+  .certificate .meta{display:flex;justify-content:center;gap:50px;margin-top:26px;flex-wrap:wrap}
+  .certificate .meta div{font-size:.85rem;color:var(--muted)}
+  .certificate .meta b{display:block;color:var(--ink);font-size:1rem;margin-top:3px}
+  .certificate .sig{margin-top:30px;display:flex;justify-content:space-around;gap:40px;flex-wrap:wrap}
+  .certificate .sig div{border-top:1.5px solid var(--ink);padding-top:6px;font-size:.82rem;color:var(--muted);min-width:200px}
+  .cert-actions{margin-top:18px;display:flex;gap:12px;flex-wrap:wrap}
+  .btn-ghost{background:#fff;color:var(--red);border:1.5px solid var(--red);border-radius:10px;
+    padding:11px 22px;font-weight:600;cursor:pointer}
+  .btn-ghost:hover{background:#fdecea}
+
+  footer{text-align:center;color:var(--muted);font-size:.78rem;margin:26px 0 10px}
+
+  @media print{
+    body *{visibility:hidden}
+    .cert-wrap,.cert-wrap *{visibility:visible}
+    .cert-wrap{position:absolute;left:0;top:0;width:100%}
+    .cert-actions{display:none}
+    .certificate{border-color:var(--red);box-shadow:none}
+    @page{size:landscape;margin:12mm}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="brand">
+    <img src="../media/protego-logo.png" alt="Protego">
+    <div class="titles">
+      <h1>Protego Manager Training</h1>
+      <p>Manager &amp; CSR Certification Training</p>
+    </div>
+  </header>
+
+  <div class="rail">
+    <span>Progress</span>
+    <div class="steps" id="steps"></div>
+    <span id="pct">0%</span>
+  </div>
+
+  <div class="player" id="player">
+    <img id="slideImg" alt="" style="display:none">
+    <video id="vid" playsinline preload="metadata" src="media/protego-training.mp4"></video>
+    <div class="bigplay" id="bigplay"><div class="btn"></div></div>
+    <div id="vidErr" style="display:none;position:absolute;inset:0;background:#101018;color:#fff;
+      align-items:center;justify-content:center;text-align:center;padding:24px;font-size:15px;
+      line-height:1.6;z-index:60">
+      <div>
+        <div style="font-weight:700;font-size:17px;margin-bottom:8px">The training video didn&rsquo;t load.</div>
+        <div style="opacity:.85">Please refresh this page. If it keeps happening, check your connection or contact Teon Delacruz.</div>
+      </div>
+    </div>
+
+    <div class="controls">
+      <button id="playBtn" title="Play / Pause (Space)" aria-label="Play or pause">
+        <svg class="ctrl-icon" id="playIcon" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+      </button>
+      <button id="backBtn" class="skip" title="Back 10 seconds" aria-label="Back 10 seconds">
+        <svg class="ctrl-icon" viewBox="0 0 24 24"><path d="M12 5V1L7 6l5 5V7a6 6 0 1 1-6 6H4a8 8 0 1 0 8-8z"/></svg>10
+      </button>
+      <button id="fwdBtn" class="skip" title="Forward 10 seconds" aria-label="Forward 10 seconds">
+        <svg class="ctrl-icon" viewBox="0 0 24 24"><path d="M12 5V1l5 5-5 5V7a6 6 0 1 0 6 6h2a8 8 0 1 1-8-8z"/></svg>10
+      </button>
+      <div class="track" id="track">
+        <div class="bar"></div>
+        <div class="locked" id="locked"></div>
+        <div class="fill" id="fill"></div>
+        <div class="knob" id="knob"></div>
+      </div>
+      <span class="time" id="time">0:00 / 0:00</span>
+      <button id="muteBtn" title="Mute" aria-label="Mute">
+        <svg class="ctrl-icon" id="muteIcon" viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3a4.5 4.5 0 00-2.5-4v8a4.5 4.5 0 002.5-4z"/></svg>
+      </button>
+      <button id="fsBtn" title="Fullscreen" aria-label="Fullscreen">
+        <svg class="ctrl-icon" viewBox="0 0 24 24"><path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/></svg>
+      </button>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <!-- quiz overlay lives INSIDE the player so it also appears in fullscreen -->
+    <div class="overlay" id="overlay">
+      <div class="quiz">
+        <div class="qhead"><div class="kicker" id="quizKicker">Knowledge Check</div><h2 id="quizTitle"></h2></div>
+        <div class="qbody" id="quizBody"></div>
+        <div class="qfoot">
+          <div class="msg" id="quizMsg"></div>
+          <div>
+            <button class="btn-primary" id="quizSubmit">Submit Answers</button>
+            <button class="btn-primary" id="quizContinue" style="display:none">Continue Training ▶</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <p class="hint" id="playerHint">You can pause, rewind and fast-forward freely. The video stops at six short knowledge checks — answer each one correctly to unlock the rest.</p>
+
+  <div class="panel" id="completePanel">
+    <h2>🎉 Training Complete!</h2>
+    <div class="scoreline">You answered <b id="scoreCorrect">0</b> of <b id="scoreTotal">14</b> knowledge-check questions correctly on your first try.</div>
+    <div class="field">
+      <label for="nameInput">Your full name (as it should appear on the certificate)</label>
+      <input id="nameInput" type="text" placeholder="e.g., Jordan Miller" autocomplete="name">
+    </div>
+    <div class="field">
+      <label for="facInput">Facility / Location (optional)</label>
+      <input id="facInput" type="text" placeholder="e.g., Phoenix — Camelback Storage">
+    </div>
+    <button class="btn-primary" id="genCert">Generate My Certificate</button>
+  </div>
+
+  <div class="cert-wrap" id="certWrap">
+    <div class="certificate" id="certificate">
+      <img class="clogo" src="../media/protego-logo.png" alt="Protego">
+      <div class="ckicker">Certificate of Completion</div>
+      <h3>Protego Protection</h3>
+      <div class="sub">Protego Manager Training</div>
+      <div class="awarded">This certifies that</div>
+      <div class="name" id="certName">—</div>
+      <div class="course">has successfully completed <b>Protego Manager Training</b><br>Manager &amp; CSR Certification Training</div>
+      <div class="meta">
+        <div id="certFacWrap" style="display:none">Facility<b id="certFac"></b></div>
+        <div>Knowledge-Check Score<b id="certScore"></b></div>
+        <div>Date Completed<b id="certDate"></b></div>
+      </div>
+      <div class="sig">
+        <div>Teon Delacruz — Client Success Manager<br>Protego Protection</div>
+        <div>Certificate ID: <span id="certId"></span></div>
+      </div>
+    </div>
+    <div class="cert-actions">
+      <button class="btn-primary" id="reportBtn" style="background:#10254C">✉️ Report My Completion</button>
+      <button class="btn-primary" onclick="window.print()">🖨️ Print / Save as PDF</button>
+      <button class="btn-ghost" id="restartBtn">Start Over</button>
+    </div>
+  </div>
+
+  <footer>© Protego Protection • Protego Manager Training</footer>
+</div>
+
+<script>
+/* ---------- knowledge checks ---------- */
+const QUIZZES = [
+  { at:0.1, title:"Why Protego Exists", q:[
+    {q:"What is the Protego Protection Plan?",
+     a:["A protection plan, not an insurance policy", "An insurance policy sold by the facility", "A warranty on the storage unit"], c:0,
+     e:"The plan terms say it plainly: this is not an insurance policy, and neither the facility nor the leasing representative is an insurance agent. Call it a protection plan."},
+    {q:"A tenant says their homeowner's policy covers everything. What's worth knowing?",
+     a:["Many homeowner's and renter's policies exclude or limit off-site storage", "Homeowner's policies always cover storage units", "It doesn't matter — the facility's insurance covers their belongings"], c:0,
+     e:"Many policies exclude or limit off-site storage, and tenants usually find out after a loss. The facility doesn't extend insurance to stored property — the addendum says so."},
+    {q:"Will filing a Protego claim raise the tenant's personal insurance premiums?",
+     a:["No — it doesn't affect their personal insurance", "Yes, by a set amount", "Only for claims over $1,000"], c:0,
+     e:"A Protego claim is completely separate from their homeowner's or renter's policy: no premium increase, and no mark on their claims history."}
+  ]},
+  { at:0.2, title:"Plans & Presenting", q:[
+    {q:"What does the $3,000 plan cost per month?",
+     a:["$18", "$14", "$26"], c:0,
+     e:"$2,000 is $14 a month, $3,000 is $18, and $5,000 is $26."},
+    {q:"Which plan is a tenant enrolled in automatically if they do nothing?",
+     a:["$2,000 for $14 a month", "$3,000 for $18 a month", "None — enrollment is always opt-in"], c:0,
+     e:"The $2,000 plan is the basic plan a tenant is enrolled in automatically if they don't choose another level or opt out with their own policy."},
+    {q:"What's the best way to offer the plan?",
+     a:["Ask which level of protection their belongings need", "Ask whether they want protection", "Only mention it if the tenant brings it up"], c:0,
+     e:"Ask which, not whether. “Would you like protection?” invites a no; “Which level of protection do your belongings need?” moves the conversation forward."}
+  ]},
+  { at:0.3, title:"The Addendum", q:[
+    {q:"What does the tenant's signature on the addendum prove?",
+     a:["That they accepted the Protego plan", "That the facility insures their belongings", "That they've filed a claim"], c:0,
+     e:"The signature is the proof the tenant accepted the Protego plan, and the facility keeps the addendum as part of the lease."},
+    {q:"A tenant signs the decline line. Is the Protego plan removed?",
+     a:["Not until they're approved through MyOwnPolicy.com", "Yes, immediately", "Yes, at the end of the month"], c:0,
+     e:"Signing the decline isn't the end. They still submit their policy at MyOwnPolicy.com, and the plan stays on their account until they're approved."},
+    {q:"Who keeps the signed addendum?",
+     a:["The facility, as part of the lease", "Only the tenant", "The claims administrator"], c:0,
+     e:"The facility retains the addendum as part of the lease or rental agreement."}
+  ]},
+  { at:0.4, title:"Coverage & Exclusions", q:[
+    {q:"What does a burglary claim require?",
+     a:["Visible forced entry and a police report", "A missing lock", "The tenant's word and a list of items"], c:0,
+     e:"Burglary means visible forced entry — damage to the unit itself — plus a police report. A missing lock is not forced entry."},
+    {q:"When is the $250 burglary deductible waived?",
+     a:["When a disc, cylinder or Noke lock was used, with proof", "Never", "When the claim is over $1,000"], c:0,
+     e:"The deductible is waived with a disc, cylinder or Noke lock, proven by a photo of the damaged lock or the receipt. Worth mentioning when a tenant buys a lock."},
+    {q:"What's the most the plan pays for cash, jewelry and watches combined?",
+     a:["$500", "Half the plan limit", "The full plan limit"], c:0,
+     e:"Cash, documents, jewelry and watches share a $500 sublimit in total."},
+    {q:"A tenant's rent is eight days late when a fire damages their unit. What's true?",
+     a:["The plan ended once rent was more than five days late", "They're covered as normal", "They're covered, minus the late fee"], c:0,
+     e:"If rent isn't received within five days of the due date, the tenant's participation in the plan ends."},
+    {q:"Which of these is covered?",
+     a:["Roof leak water damage", "Flood water", "Water backing up from a drain"], c:0,
+     e:"Roof leaks and water damage are covered; flood, surface water, and water backing up from a sewer or drain are not."}
+  ]},
+  { at:0.5, title:"Filing a Claim", q:[
+    {q:"How long does a tenant have to submit a claim?",
+     a:["30 days from discovering the loss", "10 days", "90 days"], c:0,
+     e:"All claims must be submitted within 30 days of discovery."},
+    {q:"Where are claims filed?",
+     a:["ProtegoClaims.com", "MyOwnPolicy.com", "At the facility office"], c:0,
+     e:"Claims are filed at ProtegoClaims.com. The toll-free number is at the bottom of that page."},
+    {q:"The adjuster calls and the tenant never calls back. What happens?",
+     a:["The claim is declined and closed", "The claim pays out automatically after 30 days", "The facility completes the claim for them"], c:0,
+     e:"Failure to respond to the adjuster results in the claim being declined and closed. Tell tenants to answer every call."},
+    {q:"Should the tenant clear out damaged items before the adjuster sees them?",
+     a:["No — leave everything until the adjuster or manager approves", "Yes, as soon as possible", "Only if the items are wet"], c:0,
+     e:"Nothing should be moved, removed or discarded until the adjuster or facility manager approves. Photos or video of the damage go in with the claim."}
+  ]},
+  { at:0.6, title:"The Tenant Opt-Out Process", q:[
+    {q:"How long does a new tenant have to submit their own policy?",
+     a:["10 days from move-in", "30 days", "Until their first invoice"], c:0,
+     e:"They have 10 days from move-in to upload their declaration page at MyOwnPolicy.com."},
+    {q:"Which of these must the declaration page show?",
+     a:["Their name exactly as it appears on the lease", "Their unit number", "The facility's name"], c:0,
+     e:"All five: an accepted provider, their name exactly as on the lease, a current expiration date, personal property or off-premises coverage, and the deductible."},
+    {q:"The upload isn't working for a tenant. What do you tell them?",
+     a:["Email the declaration page to support@myownpolicy.com", "Bring a printed copy to the office", "Try again next month"], c:0,
+     e:"They can email the declaration page to support@myownpolicy.com. That team responds within one business day."},
+    {q:"A tenant moves out. What happens to their Protego plan?",
+     a:["It ends automatically", "They must call to cancel", "It continues until the end of the year"], c:0,
+     e:"The plan ends automatically when the rental ends. There's nothing to cancel."}
+  ]}
+];
+
+/* Spread the correct answers around the options.
+   Every question here was authored with its correct answer written first,
+   which meant a learner could pass every knowledge check by always clicking
+   the top choice without reading a word. Within a section the answers now
+   walk through the positions in turn, starting from an offset derived from
+   the section's own title — so each section uses all three positions about
+   equally, the order is stable for a given question (somebody retaking a
+   check sees what they saw before, and the explanations still match), and
+   there is no position worth guessing. */
+function spreadAnswers(list, seed){
+  let h = 0;
+  for (let i = 0; i < seed.length; i++) h = (h * 31 + seed.charCodeAt(i)) >>> 0;
+  list.forEach((item, qi) => {
+    const n = item.a.length, k = (h + qi) % n;
+    if (!k) return;
+    item.a = item.a.slice(n - k).concat(item.a.slice(0, n - k));
+    item.c = (item.c + k) % n;
+  });
+}
+QUIZZES.forEach(z => spreadAnswers(z.q, z.title));
+
+let TOTAL_Q = QUIZZES.reduce((n,z)=>n+z.q.length,0);
+
+const OO = null;   /* opt-out is taught in the video and checked by Knowledge Check 6 */
+
+
+let firstTryCorrect = 0, activeQuiz = -1;
+const done = QUIZZES.map(()=>false);
+
+const vid=document.getElementById('vid'), fill=document.getElementById('fill'),
+  track=document.getElementById('track'), knob=document.getElementById('knob'),
+  lockedEl=document.getElementById('locked'), timeEl=document.getElementById('time'),
+  bigplay=document.getElementById('bigplay'), playIcon=document.querySelector('#playIcon path'),
+  overlay=document.getElementById('overlay'), quizBody=document.getElementById('quizBody'),
+  quizTitle=document.getElementById('quizTitle'), quizKicker=document.getElementById('quizKicker'),
+  quizMsg=document.getElementById('quizMsg'), quizSubmit=document.getElementById('quizSubmit'),
+  quizContinue=document.getElementById('quizContinue'), stepsEl=document.getElementById('steps'),
+  pctEl=document.getElementById('pct'), toastEl=document.getElementById('toast');
+
+QUIZZES.forEach(()=>{const s=document.createElement('div');s.className='seg';stepsEl.appendChild(s);});
+const segs=[...stepsEl.children];
+
+vid.addEventListener('loadedmetadata',()=>{
+  QUIZZES.forEach(z=>{const m=document.createElement('div');m.className='mark';m.style.left=(z.at*100)+'%';track.appendChild(m);});
+  updateUI();
+});
+
+/* the furthest point the learner may reach until the next check is passed */
+function gateTime(){
+  if(segMode) return Infinity;      /* a segment is a whole section; no mid-file gate */
+  if(!vid.duration) return Infinity;
+  for(let i=0;i<QUIZZES.length;i++){ if(!done[i]) return QUIZZES[i].at*vid.duration; }
+  return Infinity;
+}
+function pendingIndex(){
+  for(let i=0;i<QUIZZES.length;i++){ if(!done[i]) return i; }
+  return -1;
+}
+
+function fmt(t){t=Math.max(0,t||0);const m=Math.floor(t/60),s=Math.floor(t%60);return m+':'+String(s).padStart(2,'0');}
+function updateUI(){
+  const d=vid.duration||0, c=vid.currentTime||0;
+  const p = d? c/d*100 : 0;
+  fill.style.width=p+'%'; knob.style.left=p+'%';
+  timeEl.textContent=fmt(c)+' / '+fmt(d);
+  const g=gateTime();
+  if(d && g!==Infinity){ const gp=g/d*100; lockedEl.style.left=gp+'%'; lockedEl.style.right='0'; lockedEl.style.display='block'; }
+  else lockedEl.style.display='none';
+  pctEl.textContent=Math.round(done.filter(Boolean).length/QUIZZES.length*100)+'%';
+}
+
+let toastTimer;
+function toast(msg){
+  toastEl.textContent=msg; toastEl.classList.add('show');
+  clearTimeout(toastTimer); toastTimer=setTimeout(()=>toastEl.classList.remove('show'),2200);
+}
+
+/* seek with gating: free movement anywhere up to the next unpassed check */
+function seekTo(t){
+  if(!vid.duration) return;
+  const g=gateTime();
+  let target=Math.max(0,Math.min(t,vid.duration));
+  /* land a little short of the gate: clamping right onto it made enforceGate
+     open the next knowledge check instantly, which read as the page jumping
+     to that section on its own */
+  if(target>=g){ target=Math.max(0,g-1.5); toast('Finish this knowledge check to unlock the rest'); }
+  vid.currentTime=target;
+  updateUI();
+}
+
+function togglePlay(){ if(overlay.classList.contains('show')) return; vid.paused?vid.play():vid.pause(); }
+document.getElementById('playBtn').onclick=togglePlay;
+bigplay.onclick=togglePlay;
+document.getElementById('backBtn').onclick=()=>seekTo(vid.currentTime-10);
+document.getElementById('fwdBtn').onclick=()=>seekTo(vid.currentTime+10);
+vid.addEventListener('play',()=>{bigplay.classList.add('hidden');playIcon.setAttribute('d','M6 5h4v14H6zm8 0h4v14h-4z');});
+vid.addEventListener('pause',()=>{if(!overlay.classList.contains('show'))bigplay.classList.remove('hidden');playIcon.setAttribute('d','M8 5v14l11-7z');});
+document.getElementById('muteBtn').onclick=()=>{vid.muted=!vid.muted;};
+document.getElementById('fsBtn').onclick=()=>{
+  const p=document.getElementById('player');
+  if(!document.fullscreenElement){ (p.requestFullscreen||p.webkitRequestFullscreen||function(){}).call(p); }
+  else document.exitFullscreen();
+};
+
+/* scrub bar: click + drag */
+function posToTime(clientX){
+  const r=track.getBoundingClientRect();
+  return Math.max(0,Math.min(1,(clientX-r.left)/r.width))*(vid.duration||0);
+}
+let dragging=false;
+track.addEventListener('mousedown',e=>{ if(overlay.classList.contains('show'))return; dragging=true; seekTo(posToTime(e.clientX)); });
+window.addEventListener('mousemove',e=>{ if(dragging) seekTo(posToTime(e.clientX)); });
+window.addEventListener('mouseup',()=>{dragging=false;});
+track.addEventListener('touchstart',e=>{ if(overlay.classList.contains('show'))return; seekTo(posToTime(e.touches[0].clientX)); },{passive:true});
+track.addEventListener('touchmove',e=>{ if(overlay.classList.contains('show'))return; seekTo(posToTime(e.touches[0].clientX)); },{passive:true});
+
+/* keyboard */
+document.addEventListener('keydown',e=>{
+  if(overlay.classList.contains('show')) return;
+  if(['INPUT','TEXTAREA'].includes((e.target.tagName||''))) return;
+  if(e.code==='Space'){e.preventDefault();togglePlay();}
+  else if(e.code==='ArrowLeft') seekTo(vid.currentTime-5);
+  else if(e.code==='ArrowRight') seekTo(vid.currentTime+5);
+});
+
+/* enforce the gate during playback and on any external seek */
+vid.addEventListener('timeupdate',()=>{ updateUI(); enforceGate(); showSlideFor(vid.currentTime); });
+
+/* ---------- segment mode ----------
+   The course can run either as one long video with time-gated checks (the
+   original behaviour, used while SEGMENTS is empty) or as one file per
+   section with its knowledge check between segments.
+
+   Segment mode exists because HeyGen caps a render at 5,000 characters of
+   script, so a 12-minute course arrives as five files. Rather than stitching
+   them, the player treats each as a section: play, check, advance. */
+const SEGMENTS = [];   /* the finished video is one file with the slides baked in;
+                          the five HeyGen renders only exist for the compositor in tools/ */
+const segMode = SEGMENTS.length > 0;
+let segIdx = 0;
+
+function loadSegment(i){
+  if(i >= SEGMENTS.length) return;
+  segIdx = i;
+  curSlide = -1;
+  vid.src = SEGMENTS[i].src;
+  vid.load();
+}
+function segSlides(){ return segMode ? (SEGMENTS[segIdx].slides || []) : SLIDES; }
+
+/* ---------- slide track ----------
+   SLIDES lists {at: fraction of runtime, img: filename}. Fractions rather than
+   seconds so a re-recorded narration of a different length still lines up.
+   With SLIDES empty the player behaves exactly as it did before: plain video,
+   no slide layer, nothing to maintain. */
+const SLIDE_BASE = '';
+const SLIDES = [];
+const slideImg = document.getElementById('slideImg');
+let curSlide = -1;
+function showSlideFor(t){
+  const list = segSlides();
+  if(!list.length || !vid.duration) return;
+  const f = t / vid.duration;
+  let idx = 0;
+  for(let i=0;i<list.length;i++){ if(f >= list[i].at) idx = i; }
+  if(idx === curSlide) return;
+  curSlide = idx;
+  slideImg.src = SLIDE_BASE + list[idx].img;
+}
+if (SLIDES.length || (segMode && (SEGMENTS[0].slides||[]).length)){
+  document.getElementById('player').classList.add('staged');
+  slideImg.style.display = '';
+  const first = segMode ? SEGMENTS[0].slides[0].img : SLIDES[0].img;
+  slideImg.src = SLIDE_BASE + first;
+  curSlide = 0;
+}
+if (segMode) loadSegment(0);
+vid.addEventListener('seeking',()=>{ const g=gateTime(); if(vid.currentTime>g){ vid.currentTime=Math.max(0,g-1.5); } });
+function enforceGate(){
+  const g=gateTime();
+  if(g===Infinity) return;
+  if(vid.currentTime>=g-0.05){
+    const i=pendingIndex();
+    if(i>=0) openQuiz(i);
+  }
+}
+
+/* ---------- quiz ---------- */
+function openQuiz(i){
+  if(activeQuiz===i) return;
+  activeQuiz=i; vid.pause();
+  const z=QUIZZES[i];
+  quizKicker.textContent='Knowledge Check '+(i+1)+' of '+QUIZZES.length;
+  quizTitle.textContent=z.title;
+  quizMsg.textContent=''; quizMsg.className='msg';
+  quizSubmit.style.display=''; quizContinue.style.display='none';
+  quizBody.innerHTML='';
+  z.q.forEach((item,qi)=>{
+    const wrap=document.createElement('div');wrap.className='qitem';wrap.dataset.graded='0';wrap.dataset.locked='0';
+    const qp=document.createElement('p');qp.className='q';
+    qp.innerHTML='<span class="qnum">Q'+(qi+1)+'.</span>'+escapeHtml(item.q);
+    wrap.appendChild(qp);
+    item.a.forEach((opt,oi)=>{
+      const lab=document.createElement('label');lab.className='opt';
+      lab.innerHTML='<input type="radio" name="q'+i+'_'+qi+'" value="'+oi+'"><span>'+escapeHtml(opt)+'</span>';
+      wrap.appendChild(lab);
+    });
+    const ex=document.createElement('div');ex.className='explain';ex.textContent=item.e;
+    wrap.appendChild(ex);
+    quizBody.appendChild(wrap);
+  });
+  overlay.classList.add('show');
+  bigplay.classList.add('hidden');
+}
+
+quizSubmit.onclick=()=>{
+  const z=QUIZZES[activeQuiz];
+  const items=[...quizBody.children];
+  let unanswered=0, allCorrect=true;
+  items.forEach((wrap,qi)=>{
+    if(wrap.dataset.locked==='1') return;
+    const picked=wrap.querySelector('input:checked');
+    if(!picked){unanswered++; allCorrect=false; return;}
+    const val=parseInt(picked.value,10), correct=z.q[qi].c;
+    const opts=[...wrap.querySelectorAll('.opt')], ex=wrap.querySelector('.explain');
+    if(wrap.dataset.graded==='0'){ wrap.dataset.graded='1'; if(val===correct) firstTryCorrect++; }
+    if(val===correct){
+      opts.forEach(o=>o.classList.add('locked'));
+      opts[correct].classList.add('correct');
+      wrap.querySelectorAll('input').forEach(inp=>inp.disabled=true);
+      ex.classList.remove('err'); ex.classList.add('show');
+      wrap.dataset.locked='1';
+    } else {
+      opts.forEach(o=>o.classList.remove('wrong'));
+      opts[val].classList.add('wrong');
+      ex.classList.add('err'); ex.classList.add('show');
+      allCorrect=false;
+    }
+  });
+  if(unanswered>0){ quizMsg.className='msg err'; quizMsg.textContent='Please answer every question before submitting.'; return; }
+  if(allCorrect){
+    quizMsg.className='msg ok'; quizMsg.textContent='All correct — nicely done!';
+    quizSubmit.style.display='none'; quizContinue.style.display='';
+  } else {
+    quizMsg.className='msg err'; quizMsg.textContent='Some answers need another look — review the notes in red and try again.';
+  }
+};
+
+quizContinue.onclick=()=>{
+  done[activeQuiz]=true;
+  segs[activeQuiz].classList.add('done');
+  overlay.classList.remove('show');
+  if(segMode){
+    activeQuiz=-1; updateUI();
+    if(segIdx+1 < SEGMENTS.length){ loadSegment(segIdx+1); vid.play(); }
+    else showComplete();
+    return;
+  }
+  activeQuiz=-1;
+  updateUI();
+  vid.play();
+};
+
+let ooDone = true;
+
+/* ---------- completion + certificate ---------- */
+vid.addEventListener('ended',()=>{
+  if(segMode){ openQuiz(segIdx); return; }   /* section over -> its knowledge check */
+  if(done.every(Boolean)) showComplete();
+});
+function showComplete(){
+  if (OO && !ooDone) {                       /* module first, certificate after */
+    if(document.fullscreenElement && document.exitFullscreen) document.exitFullscreen();
+    const o=document.getElementById('optoutPanel');
+    o.classList.add('show');
+    if(o.scrollIntoView)o.scrollIntoView({behavior:'smooth'});
+    return;
+  }
+  document.getElementById('scoreCorrect').textContent=firstTryCorrect;
+  document.getElementById('scoreTotal').textContent=TOTAL_Q;
+  if(document.fullscreenElement && document.exitFullscreen) document.exitFullscreen();
+  const p=document.getElementById('completePanel');p.classList.add('show');
+  if(p.scrollIntoView)p.scrollIntoView({behavior:'smooth'});
+}
+document.getElementById('genCert').onclick=()=>{
+  const name=document.getElementById('nameInput').value.trim();
+  if(!name){alert('Please enter your name for the certificate.');return;}
+  const fac=document.getElementById('facInput').value.trim();
+  document.getElementById('certName').textContent=name;
+  if(fac){document.getElementById('certFac').textContent=fac;document.getElementById('certFacWrap').style.display='';}
+  document.getElementById('certScore').textContent=firstTryCorrect+' / '+TOTAL_Q;
+  const now=new Date();
+  document.getElementById('certDate').textContent=now.toLocaleDateString(undefined,{year:'numeric',month:'long',day:'numeric'});
+  document.getElementById('certId').textContent='PROTEGO-'+now.getFullYear()+'-'+Math.random().toString(36).slice(2,7).toUpperCase();
+  const cw=document.getElementById('certWrap');cw.classList.add('show');if(cw.scrollIntoView)cw.scrollIntoView({behavior:'smooth'});
+};
+document.getElementById('restartBtn').onclick=()=>{location.reload();};
+
+function escapeHtml(s){return s.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+
+  /* ---------- video load failure ---------- */
+  (function(){
+    var box=document.getElementById('vidErr');
+    function show(){ box.style.display='flex'; }
+    vid.addEventListener('error', show);
+    vid.addEventListener('stalled', function(){ if(!vid.duration) show(); });
+    vid.addEventListener('loadedmetadata', function(){ box.style.display='none'; });
+  })();
+
+/* ---------- completion reporting ---------- */
+/* Set REPORT_FORM to a Microsoft Forms / Google Forms prefill URL to collect
+   completions in a spreadsheet. Leave it empty and the button opens a
+   pre-addressed email instead. Both give a dated record; neither lets the
+   page send anything on its own. */
+const REPORT_FORM = '';
+/* Completions go to the course contact. One place to change it. */
+const REPORT_TO   = 'tdelacruz@tenantpropertyprotection.com';
+const REPORT_CC   = '';
+const COURSE_NAME = "Protego Manager Training";
+
+document.getElementById('reportBtn').onclick=function(){
+  const name  = (document.getElementById('certName').textContent||'').trim();
+  const score = (document.getElementById('certScore').textContent||'').trim();
+  const id    = (document.getElementById('certId').textContent||'').trim();
+  const date  = (document.getElementById('certDate')
+                 ? document.getElementById('certDate').textContent
+                 : new Date().toLocaleDateString()).trim();
+  if(!name || name==='\u2014'){ alert('Please generate your certificate first.'); return; }
+
+  if(REPORT_FORM){
+    const q = REPORT_FORM
+      + (REPORT_FORM.indexOf('?')<0?'?':'&')
+      + 'name='   + encodeURIComponent(name)
+      + '&course='+ encodeURIComponent(COURSE_NAME)
+      + '&score=' + encodeURIComponent(score)
+      + '&date='  + encodeURIComponent(date)
+      + '&cert='  + encodeURIComponent(id);
+    window.open(q,'_blank','noopener');
+    return;
+  }
+
+  const subject = 'Training completed: ' + COURSE_NAME + ' \u2014 ' + name;
+  const body =
+      'Training completion report\n' +
+      '--------------------------\n' +
+      'Name:            ' + name  + '\n' +
+      'Course:          ' + COURSE_NAME + '\n' +
+      'Score:           ' + score + '\n' +
+      'Date completed:  ' + date  + '\n' +
+      'Certificate ID:  ' + id    + '\n\n' +
+      'Company / facility: \n' +
+      '(Please add your company name above before sending.)\n';
+  window.location.href = 'mailto:' + REPORT_TO
+      + (REPORT_CC ? '?cc=' + encodeURIComponent(REPORT_CC) : '?_=')
+      + '&subject=' + encodeURIComponent(subject)
+      + '&body='    + encodeURIComponent(body);
+};
+</script>
+</body>
+</html>
