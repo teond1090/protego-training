@@ -1,0 +1,47 @@
+{
+  "note": "Protego presenter renders (Annie, Avatar V, transparent WebM). fetch-videos.yml pulls these into media/.",
+  "files": [
+    {
+      "name": "part-1.webm",
+      "section": "Welcome + Why Protego Exists",
+      "video_id": "f2c687f1cf96b1a26a1758b33f13d9db",
+      "seconds": 82.9388,
+      "url": "https://resource2.heygen.ai/aws_pacific/avatar_tmp/0fc786e7689248149b7af249dff7f69a/f2c687f1cf96b1a26a1758b33f13d9db.webm"
+    },
+    {
+      "name": "part-2.webm",
+      "section": "Plans & Presenting",
+      "video_id": "fdbe40ee832572a3c4e441646da2ac14",
+      "seconds": 57.7045,
+      "url": "https://resource2.heygen.ai/aws_pacific/avatar_tmp/0fc786e7689248149b7af249dff7f69a/fdbe40ee832572a3c4e441646da2ac14.webm"
+    },
+    {
+      "name": "part-3.webm",
+      "section": "The Addendum",
+      "video_id": "fd4a18c5c62ba93907d39a5dd67e9f88",
+      "seconds": 42.2139,
+      "url": "https://resource2.heygen.ai/aws_pacific/avatar_tmp/0fc786e7689248149b7af249dff7f69a/fd4a18c5c62ba93907d39a5dd67e9f88.webm"
+    },
+    {
+      "name": "part-4.webm",
+      "section": "Coverage & Exclusions",
+      "video_id": "c83b30a9eeaa38b2ac01528734dad4c2",
+      "seconds": 96.209,
+      "url": "https://resource2.heygen.ai/aws_pacific/avatar_tmp/0fc786e7689248149b7af249dff7f69a/c83b30a9eeaa38b2ac01528734dad4c2.webm"
+    },
+    {
+      "name": "part-5.webm",
+      "section": "Filing a Claim",
+      "video_id": "23b8f5566713a23d8187aa3ba995dba7",
+      "seconds": 67.4482,
+      "url": "https://resource2.heygen.ai/aws_pacific/avatar_tmp/0fc786e7689248149b7af249dff7f69a/23b8f5566713a23d8187aa3ba995dba7.webm"
+    },
+    {
+      "name": "part-6.webm",
+      "section": "The Tenant Opt-Out Process + Close",
+      "video_id": "5f49beb09357ffdc32286ceb2f1c4dd2",
+      "seconds": 103.915,
+      "url": "https://resource2.heygen.ai/aws_pacific/avatar_tmp/0fc786e7689248149b7af249dff7f69a/5f49beb09357ffdc32286ceb2f1c4dd2.webm"
+    }
+  ]
+}
