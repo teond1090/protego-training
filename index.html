@@ -495,15 +495,19 @@ footer a{color:#cdd6e6}
           <h3>Protego Protection &mdash; Manager Training</h3>
           <p class="vdesc">What the plan is, how to offer it, what the addendum records, what is and isn&rsquo;t
              covered, how a claim works, and how a tenant opts out with their own policy.</p>
-          <div class="vmeta"><span class="pill">About 10 min</span><span class="pill">6 knowledge checks</span>
+          <div class="vmeta"><span class="pill">About 8 min</span><span class="pill">6 knowledge checks</span>
             <span class="pill">Completion certificate</span></div>
         </div>
       </div>
+      <div class="vplay">
+        <img src="media/protego-poster.jpg" alt="" loading="lazy">
+        <button type="button" class="hit" data-src="course/media/protego-training.mp4" aria-label="Play the Protego course here">
+          <span class="pbtn"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l11-6.5z"/></svg></span>
+        </button>
+        <span class="cap">Plays here &mdash; knowledge checks and the certificate are in the full course</span>
+      </div>
       <div class="vbody">
-        <div class="soon"><img src="media/protego-shield.png" alt="">
-          <div><b>The course video is being recorded.</b>
-          <p>It will appear right here as soon as it&rsquo;s ready. Everything else on this portal is live now.</p></div></div>
-        <h4 style="margin-top:22px">What your team will learn</h4>
+        <h4>What your team will learn</h4>
         <ul class="objl">
           <li>Why Protego exists &mdash; and why it&rsquo;s a protection plan, not insurance</li>
           <li>The three plan levels, and how to offer them at the counter</li>
@@ -512,6 +516,10 @@ footer a{color:#cdd6e6}
           <li>How a tenant files a claim, and what keeps it moving</li>
           <li>How a tenant opts out with their own policy &mdash; the 10-day window and the five details</li>
         </ul>
+      </div>
+      <div class="vfoot">
+        <a class="btn" href="course/" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="3"/><path d="M10 9l5 3-5 3z"/></svg>Open training</a>
+        <a class="mini" href="course/media/protego-training.mp4" download><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="m7 11 5 5 5-5"/><path d="M5 21h14"/></svg>Download video</a>
       </div>
     </article>
   </div>
@@ -818,6 +826,17 @@ document.getElementById('menubtn').addEventListener('click', function(){
   const n = document.getElementById('nav');
   const open = n.classList.toggle('open');
   this.setAttribute('aria-expanded', open ? 'true' : 'false');
+});
+/* Press play and the course plays right here; only the poster loads until then.
+   Watching inline doesn't record a completion — the caption says so. */
+document.addEventListener('click', e => {
+  const hit = e.target.closest('.vplay .hit');
+  if (!hit) return;
+  const v = document.createElement('video');
+  v.src = hit.dataset.src; v.controls = true; v.autoplay = true; v.preload = 'auto';
+  v.setAttribute('playsinline', '');
+  hit.parentNode.replaceChildren(v);
+  v.focus({ preventScroll:true });
 });
 show((location.hash||'#home').slice(1), false);
 </script>

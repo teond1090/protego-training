@@ -14,11 +14,11 @@
      "img": "01-title.png"
     },
     {
-     "at": 0.272,
+     "at": 0.284,
      "img": "02-gap.png"
     },
     {
-     "at": 0.696,
+     "at": 0.685,
      "img": "03-not-insurance.png"
     }
    ]
@@ -33,7 +33,7 @@
      "img": "04-rates.png"
     },
     {
-     "at": 0.429,
+     "at": 0.413,
      "img": "05-present.png"
     }
    ]
@@ -48,7 +48,7 @@
      "img": "06-addendum.png"
     },
     {
-     "at": 0.507,
+     "at": 0.524,
      "img": "07-decline.png"
     }
    ]
@@ -63,15 +63,15 @@
      "img": "08-covered.png"
     },
     {
-     "at": 0.134,
+     "at": 0.166,
      "img": "09-burglary.png"
     },
     {
-     "at": 0.516,
+     "at": 0.512,
      "img": "10-limits.png"
     },
     {
-     "at": 0.708,
+     "at": 0.719,
      "img": "11-not-covered.png"
     }
    ]
@@ -86,11 +86,11 @@
      "img": "12-claim.png"
     },
     {
-     "at": 0.45,
+     "at": 0.436,
      "img": "13-claim-process.png"
     },
     {
-     "at": 0.792,
+     "at": 0.781,
      "img": "14-payout.png"
     }
    ]
@@ -105,19 +105,19 @@
      "img": "15-optout.png"
     },
     {
-     "at": 0.128,
+     "at": 0.114,
      "img": "16-five.png"
     },
     {
-     "at": 0.281,
+     "at": 0.276,
      "img": "17-after.png"
     },
     {
-     "at": 0.645,
+     "at": 0.624,
      "img": "18-recap.png"
     },
     {
-     "at": 0.853,
+     "at": 0.847,
      "img": "19-contact.png"
     }
    ]
